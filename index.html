@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="apple-touch-icon" sizes="526x526" href="logoplayer.PNG">
+  <link rel="icon" href="logoplayer.PNG" type="image/x-icon">
+  <link rel="shortcut icon" href="logoplayer.PNG" type="image/x-icon">
+    <title>Player</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        input[type="file"] {
+            margin-bottom: 10px;
+        }
+
+        button {
+            margin: 5px;
+            padding: 8px 12px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        #audioPlayer {
+            width: 100%;
+            display: none; /* Hide default player controls */
+        }
+
+        #scrubber {
+            width: 80%;
+            margin-top: 10px;
+        }
+
+        #timeDisplay {
+            margin-top: 5px;
+            font-size: 14px;
+        }
+
+        #playlist {
+            text-align: left;
+            margin-top: 20px;
+        }
+
+        #playlist button {
+            display: block;
+            margin: 5px;
+            padding: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+  <h1>Player</h1><br>
+<body>
+<center>
+   <img style="width:100%;" id="image" src="playerblank.png">
+    <input type="file" id="fileInput" accept=".mp3" multiple />
+      <button onclick="playAudio()">🎬</button>
+  <button onclick="skipTrack(-1)">⏪</button>
+  <button onclick="togglePlayPause()">⏯️</button>
+  <button onclick="skipTrack(1)">⏩</button>
+    <audio id="audioPlayer" controls></audio>
+    <input type="range" id="scrubber" value="0" step="1" onchange="seek()" />
+    <div id="timeDisplay">
+        <span id="currentTime">0:00</span>/<span id="totalTime">0:00</span>
+    </div>
+
+    <!-- New Up Next and Upload Menu -->
+    <div id="playlist">
+        <button onclick="togglePlaylist()">Up Next</button>
+        <div id="playlistContent" style="display: none;"></div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const scrubber = document.getElementById('scrubber');
+        const currentTimeDisplay = document.getElementById('currentTime');
+        const totalTimeDisplay = document.getElementById('totalTime');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const playlistContent = document.getElementById('playlistContent');
+        let playlist = [];
+        let currentTrackIndex = 0;
+
+        function playAudio() {
+            const files = fileInput.files;
+
+            if (files.length > 0) {
+                playlist = [];
+                
+                for (const file of files) {
+                    const objectURL = URL.createObjectURL(file);
+                    playlist.push(objectURL);
+                }
+
+                audioPlayer.src = playlist[currentTrackIndex];
+                audioPlayer.play();
+
+                updateInterface();
+                
+                audioPlayer.addEventListener('ended', function() {
+                    currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+                    audioPlayer.src = playlist[currentTrackIndex];
+                    audioPlayer.play();
+                    updateInterface();
+                });
+
+                audioPlayer.addEventListener('timeupdate', function() {
+                    updateTime();
+                });
+            } else {
+                alert("Please select one or more MP3 files.");
+            }
+        }
+
+        function skipTrack(direction) {
+            currentTrackIndex = (currentTrackIndex + direction + playlist.length) % playlist.length;
+            audioPlayer.src = playlist[currentTrackIndex];
+            audioPlayer.play();
+            updateInterface();
+        }
+
+        function togglePlayPause() {
+            if (audioPlayer.paused) {
+                audioPlayer.play();
+            } else {
+                audioPlayer.pause();
+            }
+        }
+
+        function updateTime() {
+            const currentTime = Math.floor(audioPlayer.currentTime);
+            const minutes = Math.floor(currentTime / 60);
+            const seconds = currentTime % 60;
+            currentTimeDisplay.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+            const totalTime = Math.floor(audioPlayer.duration);
+            const totalMinutes = Math.floor(totalTime / 60);
+            const totalSeconds = totalTime % 60;
+            totalTimeDisplay.textContent = `${totalMinutes}:${totalSeconds}`;
+
+            scrubber.value = currentTime;
+        }
+
+        function updateInterface() {
+            updateTime();
+            scrubber.max = Math.floor(audioPlayer.duration);
+
+            const fileName = fileInput.files[currentTrackIndex].name;
+            timeDisplay.innerHTML = `<strong>Now Playing:</strong> ${fileName}`;
+        }
+
+        function seek() {
+            audioPlayer.currentTime = scrubber.value;
+            updateTime();
+        }
+
+        function togglePlaylist() {
+            playlistContent.innerHTML = "<strong>Up Next:</strong>";
+            
+            for (let i = 0; i < playlist.length; i++) {
+                const fileName = fileInput.files[i].name;
+                playlistContent.innerHTML += `<button onclick="selectTrack(${i})">${fileName}</button>`;
+            }
+
+            playlistContent.style.display = 'block';
+        }
+
+        function selectTrack(index) {
+            currentTrackIndex = index;
+            audioPlayer.src = playlist[currentTrackIndex];
+            audioPlayer.play();
+            updateInterface();
+        }
+
+        function openFileInput() {
+            document.getElementById('fileInput').click();
+        }
+    </script>
+  </center>
+</body>
+</html>
