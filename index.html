@@ -154,6 +154,14 @@
 
             const fileName = fileInput.files[currentTrackIndex].name;
             timeDisplay.innerHTML = `Now Playing: ${fileName}`;
+            navigator.mediaSession.metadata = new MediaMetadata({
+                  title: fileName,
+                  artist: 'Player by hashcomp',
+                  album: 'Player by HashComp',
+                  artwork: [
+                      { src: 'playerblank.png', sizes: '512x512', type: 'image/png' },
+                  ]
+              });
         }
 
         function togglePlaylist() {
