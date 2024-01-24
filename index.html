@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <link rel="apple-touch-icon" sizes="526x526" href="logoplayer.PNG">
-  <link rel="icon" href="logoplayer.PNG" type="image/x-icon">
-  <link rel="shortcut icon" href="logoplayer.PNG" type="image/x-icon">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" sizes="526x526" href="playerblank.png">
+    <link rel="icon" href="logoplayer.PNG" type="image/x-icon">
+    <link rel="shortcut icon" href="logoplayer.PNG" type="image/x-icon">
     <title>Player</title>
     <style>
         body {
@@ -30,11 +30,6 @@
             display: none; /* Hide default player controls */
         }
 
-        #scrubber {
-            width: 80%;
-            margin-top: 10px;
-        }
-
         #timeDisplay {
             margin-top: 5px;
             font-size: 14px;
@@ -53,20 +48,18 @@
         }
     </style>
 </head>
-  <h1>Player</h1><br>
 <body>
+  <br>
+  <h1>Player</h1>
 <center>
    <img style="width:100%;" id="image" src="playerblank.png">
+  <div id="timeDisplay">
+    </div><audio id="audioPlayer" controls></audio>
     <input type="file" id="fileInput" accept=".mp3" multiple />
       <button onclick="playAudio()">🎬</button>
   <button onclick="skipTrack(-1)">⏪</button>
   <button onclick="togglePlayPause()">⏯️</button>
   <button onclick="skipTrack(1)">⏩</button>
-    <audio id="audioPlayer" controls></audio>
-    <input type="range" id="scrubber" value="0" step="1" onchange="seek()" />
-    <div id="timeDisplay">
-        <span id="currentTime">0:00</span>/<span id="totalTime">0:00</span>
-    </div>
 
     <!-- New Up Next and Upload Menu -->
     <div id="playlist">
@@ -77,44 +70,58 @@
     <script>
         const fileInput = document.getElementById('fileInput');
         const audioPlayer = document.getElementById('audioPlayer');
-        const scrubber = document.getElementById('scrubber');
-        const currentTimeDisplay = document.getElementById('currentTime');
-        const totalTimeDisplay = document.getElementById('totalTime');
-        const timeDisplay = document.getElementById('timeDisplay');
+        const currentTimeDisplay = document.getElementById('timeDisplay');
         const playlistContent = document.getElementById('playlistContent');
         let playlist = [];
         let currentTrackIndex = 0;
 
-        function playAudio() {
-            const files = fileInput.files;
+      function playAudio() {
+          const files = fileInput.files;
 
-            if (files.length > 0) {
-                playlist = [];
-                
-                for (const file of files) {
-                    const objectURL = URL.createObjectURL(file);
-                    playlist.push(objectURL);
-                }
+          if (files.length > 0) {
+              playlist = [];
 
-                audioPlayer.src = playlist[currentTrackIndex];
-                audioPlayer.play();
+              for (const file of files) {
+                  const objectURL = URL.createObjectURL(file);
+                  playlist.push(objectURL);
+              }
 
-                updateInterface();
-                
-                audioPlayer.addEventListener('ended', function() {
-                    currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
-                    audioPlayer.src = playlist[currentTrackIndex];
-                    audioPlayer.play();
-                    updateInterface();
-                });
+              audioPlayer.src = playlist[currentTrackIndex];
+              audioPlayer.play();
 
-                audioPlayer.addEventListener('timeupdate', function() {
-                    updateTime();
-                });
-            } else {
-                alert("Please select one or more MP3 files.");
-            }
-        }
+              // Set the song title dynamically
+              const fileName = fileInput.files[currentTrackIndex].name;
+              navigator.mediaSession.metadata = new MediaMetadata({
+                  title: fileName,
+                  artist: 'Player by hashcomp',
+                  album: 'Player by HashComp',
+                  artwork: [
+                      { src: 'playerblank.png', sizes: '512x512', type: 'image/png' },
+                  ]
+              });
+
+              updateInterface();
+
+              audioPlayer.addEventListener('ended', function () {
+                  currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+                  audioPlayer.src = playlist[currentTrackIndex];
+                  audioPlayer.play();
+
+                  // Update song title for the next track
+                  const nextFileName = fileInput.files[currentTrackIndex].name;
+                  navigator.mediaSession.metadata.title = nextFileName;
+
+                  updateInterface();
+              });
+
+              audioPlayer.addEventListener('timeupdate', function () {
+                  updateTime();
+              });
+          } else {
+              alert("Please select one or more MP3 files.");
+          }
+      }
+
 
         function skipTrack(direction) {
             currentTrackIndex = (currentTrackIndex + direction + playlist.length) % playlist.length;
@@ -135,27 +142,14 @@
             const currentTime = Math.floor(audioPlayer.currentTime);
             const minutes = Math.floor(currentTime / 60);
             const seconds = currentTime % 60;
-            currentTimeDisplay.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-
-            const totalTime = Math.floor(audioPlayer.duration);
-            const totalMinutes = Math.floor(totalTime / 60);
-            const totalSeconds = totalTime % 60;
-            totalTimeDisplay.textContent = `${totalMinutes}:${totalSeconds}`;
-
-            scrubber.value = currentTime;
+            currentTimeDisplay.textContent = `Now Playing: ${fileInput.files[currentTrackIndex].name} - ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
         }
 
         function updateInterface() {
             updateTime();
-            scrubber.max = Math.floor(audioPlayer.duration);
 
             const fileName = fileInput.files[currentTrackIndex].name;
-            timeDisplay.innerHTML = `<strong>Now Playing:</strong> ${fileName}`;
-        }
-
-        function seek() {
-            audioPlayer.currentTime = scrubber.value;
-            updateTime();
+            timeDisplay.innerHTML = `Now Playing: ${fileName}`;
         }
 
         function togglePlaylist() {
